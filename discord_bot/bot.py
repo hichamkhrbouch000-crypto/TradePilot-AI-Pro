@@ -1,36 +1,13 @@
-import discord
-from discord.ext import commands
-from config.settings import DISCORD_TOKEN
-from core.engine import TradingEngine
-from core.strategy import calculate_indicators, generate_signal
-
-# إعداد البوت
-intents = discord.Intents.default()
-bot = commands.Bot(command_prefix="!", intents=intents)
-engine = TradingEngine()
-
-@bot.event
-async def on_ready():
-    print(f'البوت {bot.user} جاهز للعمل!')
-
 @bot.command()
-async def analyze(ctx):
-    """أمر التحليل الفوري: !analyze"""
+async def trade(ctx):
+    """أمر تنفيذ التداول التلقائي: !trade"""
     ohlcv = await engine.fetch_ohlcv()
-    if ohlcv:
-        indicators = calculate_indicators(ohlcv)
-        signal = generate_signal(indicators)
-        
-        embed = discord.Embed(title="📊 تقرير تحليل البيتكوين", color=discord.Color.gold())
-        embed.add_field(name="RSI", value=f"{indicators['RSI']:.2f}", inline=True)
-        embed.add_field(name="SMA20", value=f"{indicators['SMA20']:.2f}", inline=True)
-        embed.add_field(name="القرار", value=f"**{signal}**", inline=False)
-        
-        await ctx.send(embed=embed)
+    indicators = calculate_indicators(ohlcv)
+    signal = generate_signal(indicators)
+    
+    if signal != "HOLD":
+        # هنا يتم تنفيذ الشراء أو البيع
+        order = await engine.place_order(signal, amount=0.001) # حدد الكمية هنا
+        await ctx.send(f"تم تنفيذ أمر {signal} بنجاح: {order['id']}")
     else:
-        await ctx.send("❌ فشل في جلب بيانات السوق.")
-
-# تشغيل البوت
-def run_bot():
-    bot.run(DISCORD_TOKEN)
-
+        await ctx.send("لا توجد إشارة تداول حالياً.")
