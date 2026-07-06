@@ -1,31 +1,24 @@
-import discord
-from discord.ext import commands
-from config.settings import DISCORD_TOKEN
-from core.engine import TradingEngine
+import asyncio
+from discord.ext import tasks
 from core.strategy import calculate_indicators, generate_signal
+# ... (استيراد المكتبات الأخرى)
 
-intents = discord.Intents.default()
-intents.message_content = True # ضروري ليقرأ البوت الأوامر
-bot = commands.Bot(command_prefix="!", intents=intents)
-engine = TradingEngine()
+@tasks.loop(minutes=1) # سيحلل السوق كل دقيقة تلقائياً
+async def auto_trade():
+    data = exchange.fetch_ohlcv(SYMBOL, timeframe='1m', limit=100)
+    indicators = calculate_indicators(data)
+    signal = generate_signal(indicators)
+    
+    if signal == "BUY":
+        # تنفيذ أمر شراء تلقائي
+        exchange.create_market_buy_order(SYMBOL, amount)
+        print("تم تنفيذ أمر شراء تلقائي!")
+    elif signal == "SELL":
+        # تنفيذ أمر بيع تلقائي
+        exchange.create_market_sell_order(SYMBOL, amount)
+        print("تم تنفيذ أمر بيع تلقائي!")
 
-@bot.command()
-async def analyze(ctx):
-    ohlcv = await engine.fetch_ohlcv()
-    if ohlcv:
-        indicators = calculate_indicators(ohlcv)
-        signal = generate_signal(indicators)
-        await ctx.send(f"📊 الحالة: {signal} | RSI: {indicators['RSI']:.2f}")
-
-@bot.command()
-async def buy(ctx, amount: float):
-    result = await engine.execute_trade("BUY", amount)
-    await ctx.send(f"✅ نتيجة أمر الشراء التجريبي: {result}")
-
-@bot.command()
-async def sell(ctx, amount: float):
-    result = await engine.execute_trade("SELL", amount)
-    await ctx.send(f"✅ نتيجة أمر البيع التجريبي: {result}")
-
-def run_bot():
-    bot.run(DISCORD_TOKEN)
+@bot.event
+async def on_ready():
+    auto_trade.start() # تشغيل المحرك التلقائي عند بدء البوت
+    print("البوت جاهز ويعمل الآن في وضع التداول التلقائي!")
