@@ -1,24 +1,38 @@
-import asyncio
-from discord.ext import tasks
+import discord
+from discord.ext import commands, tasks
+from config.settings import DISCORD_TOKEN, SYMBOL
+from core.engine import TradingEngine
 from core.strategy import calculate_indicators, generate_signal
-# ... (استيراد المكتبات الأخرى)
 
-@tasks.loop(minutes=1) # سيحلل السوق كل دقيقة تلقائياً
-async def auto_trade():
-    data = exchange.fetch_ohlcv(SYMBOL, timeframe='1m', limit=100)
-    indicators = calculate_indicators(data)
-    signal = generate_signal(indicators)
-    
-    if signal == "BUY":
-        # تنفيذ أمر شراء تلقائي
-        exchange.create_market_buy_order(SYMBOL, amount)
-        print("تم تنفيذ أمر شراء تلقائي!")
-    elif signal == "SELL":
-        # تنفيذ أمر بيع تلقائي
-        exchange.create_market_sell_order(SYMBOL, amount)
-        print("تم تنفيذ أمر بيع تلقائي!")
+intents = discord.Intents.default()
+intents.message_content = True
+bot = commands.Bot(command_prefix="!", intents=intents)
+engine = TradingEngine()
+
+# كمية التداول التلقائي (مثلاً 0.001 BTC)
+TRADE_AMOUNT = 0.001
+
+@tasks.loop(minutes=1)
+async def auto_trader():
+    ohlcv = await engine.fetch_ohlcv(limit=100)
+    if ohlcv:
+        indicators = calculate_indicators(ohlcv)
+        signal = generate_signal(indicators)
+        
+        if signal == "BUY":
+            result = await engine.execute_trade("BUY", TRADE_AMOUNT)
+            print(f"✅ صفقة شراء تلقائية: {result}")
+        elif signal == "SELL":
+            result = await engine.execute_trade("SELL", TRADE_AMOUNT)
+            print(f"✅ صفقة بيع تلقائية: {result}")
 
 @bot.event
 async def on_ready():
-    auto_trade.start() # تشغيل المحرك التلقائي عند بدء البوت
-    print("البوت جاهز ويعمل الآن في وضع التداول التلقائي!")
+    auto_trader.start()
+    print(f"🚀 البوت يعمل الآن بوضع التداول الذكي! يراقب {SYMBOL}")
+
+@bot.command()
+async def status(ctx):
+    await ctx.send("🤖 البوت يعمل في وضع التداول التلقائي ويراقب السوق.")
+
+bot.run(DISCORD_TOKEN)
