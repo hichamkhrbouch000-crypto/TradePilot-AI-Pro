@@ -1,13 +1,31 @@
+import discord
+from discord.ext import commands
+from config.settings import DISCORD_TOKEN
+from core.engine import TradingEngine
+from core.strategy import calculate_indicators, generate_signal
+
+intents = discord.Intents.default()
+intents.message_content = True # ضروري ليقرأ البوت الأوامر
+bot = commands.Bot(command_prefix="!", intents=intents)
+engine = TradingEngine()
+
 @bot.command()
-async def trade(ctx):
-    """أمر تنفيذ التداول التلقائي: !trade"""
+async def analyze(ctx):
     ohlcv = await engine.fetch_ohlcv()
-    indicators = calculate_indicators(ohlcv)
-    signal = generate_signal(indicators)
-    
-    if signal != "HOLD":
-        # هنا يتم تنفيذ الشراء أو البيع
-        order = await engine.place_order(signal, amount=0.001) # حدد الكمية هنا
-        await ctx.send(f"تم تنفيذ أمر {signal} بنجاح: {order['id']}")
-    else:
-        await ctx.send("لا توجد إشارة تداول حالياً.")
+    if ohlcv:
+        indicators = calculate_indicators(ohlcv)
+        signal = generate_signal(indicators)
+        await ctx.send(f"📊 الحالة: {signal} | RSI: {indicators['RSI']:.2f}")
+
+@bot.command()
+async def buy(ctx, amount: float):
+    result = await engine.execute_trade("BUY", amount)
+    await ctx.send(f"✅ نتيجة أمر الشراء التجريبي: {result}")
+
+@bot.command()
+async def sell(ctx, amount: float):
+    result = await engine.execute_trade("SELL", amount)
+    await ctx.send(f"✅ نتيجة أمر البيع التجريبي: {result}")
+
+def run_bot():
+    bot.run(DISCORD_TOKEN)
