@@ -1,30 +1,24 @@
 import asyncio
-import logging
-import requests
-import os
-from config import DISCORD_WEBHOOK_URL
+from src.api.data_fetcher import DataFetcher
+from src.engine.feature_engine import engine
 
-# إعداد السجلات
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-logger = logging.getLogger(__name__)
-
-async def send_welcome_message():
-    """إرسال رسالة ترحيبية للتأكد من ربط الديسكورد"""
-    if DISCORD_WEBHOOK_URL:
-        message = {"content": "🚀 **TradePilot AI is Online and Operational!**"}
-        try:
-            requests.post(DISCORD_WEBHOOK_URL, json=message)
-            logger.info("تم إرسال رسالة الترحيب إلى ديسكورد بنجاح!")
-        except Exception as e:
-            logger.error(f"فشل إرسال رسالة الترحيب: {e}")
-
-async def main():
-    logger.info("TradePilot AI Initialized.")
-    await send_welcome_message()
+async def test_pipeline():
+    print("--- Testing Pipeline ---")
     
-    # هنا سيعمل البوت في حلقة انتظار
-    while True:
-        await asyncio.sleep(3600) 
+    # 1. جلب البيانات
+    fetcher = DataFetcher(exchange_id='binance')
+    df = await fetcher.fetch_ohlcv('BTC/USDT', '1h', limit=50)
+    
+    if not df.empty:
+        print(f"Data fetched: {len(df)} candles.")
+        
+        # 2. تطبيق المحرك
+        df_processed = engine.process(df)
+        
+        print("Features computed:")
+        print(df_processed[['close', 'RSI', 'EMA_20']].tail())
+    else:
+        print("Failed to fetch data.")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(test_pipeline())
