@@ -12,7 +12,7 @@ async def main():
     print("--- Database Initialized ---")
 
     # 2. جلب البيانات (مثال: BTC/USDT)
-    fetcher = DataFetcher(exchange_id='binance')
+    fetcher = DataFetcher(exchange_id='kucoin')
     print("Fetching data...")
     df = await fetcher.fetch_ohlcv('BTC/USDT', '1h', limit=100)
 
