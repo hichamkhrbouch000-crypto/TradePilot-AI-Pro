@@ -1,21 +1,15 @@
+import csv
+import os
 import datetime
-import requests
 
-# الرابط الخاص بك مدمج الآن في الكود
-DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1524031878888161491/ZdJI5aWWngHeQcXfPlwjHTbyLJw_-7KieFaFFPf3eTggj3Y7aWIo6cxKrGeC8NKudz9_"
+FILE_NAME = "trade_analytics.csv"
 
-def log_trade(action, symbol, price):
-    # 1. تسجيل في الملف النصي كنسخة احتياطية
-    with open("trades.txt", "a") as f:
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        f.write(f"{timestamp} | {action} | {symbol} | Price: {price}\n")
+def log_decision(decision_data):
+    # decision_data هو قاموس (dictionary) يحتوي على كافة التفاصيل
+    file_exists = os.path.isfile(FILE_NAME)
     
-    # 2. إرسال رسالة إلى Discord
-    message = f"🚀 صفقة جديدة: {action} على {symbol} بالسعر {price}"
-    data = {"content": message}
-    
-    try:
-        requests.post(DISCORD_WEBHOOK_URL, json=data)
-        print(f"تم إرسال التنبيه إلى Discord: {action}")
-    except Exception as e:
-        print(f"خطأ في إرسال التنبيه: {e}")
+    with open(FILE_NAME, "a", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=decision_data.keys())
+        if not file_exists:
+            writer.writeheader()
+        writer.writerow(decision_data)
