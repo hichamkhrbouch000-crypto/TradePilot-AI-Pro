@@ -3,7 +3,7 @@ import time
 
 def run_trading_engine():
     # الاتصال بمنصة Binance لجلب البيانات العامة
-    exchange = ccxt.binance()
+    exchange = ccxt.kucoin()
     print("--- المحرك النشط بدأ العمل! ---")
     
     while True:
