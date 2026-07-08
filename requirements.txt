@@ -6,3 +6,5 @@ discord.py
 sqlalchemy
 requests
 flask
+pandas
+pandas_ta
