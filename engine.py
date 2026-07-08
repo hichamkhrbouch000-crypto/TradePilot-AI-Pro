@@ -1,10 +1,14 @@
 import ccxt
 import time
-from database import log_trade # استيراد دالة التسجيل
+from database import log_trade
 
 def run_trading_engine():
-    exchange = ccxt.kucoin() # استخدمنا KuCoin لتجنب القيود
+    # استخدام KuCoin لتجاوز قيود الموقع الجغرافي
+    exchange = ccxt.kucoin()
     print("--- المحرك النشط بدأ العمل! ---")
+    
+    # رسالة تجريبية للتأكد من ربط الديسكورد يعمل فور التشغيل
+    log_trade("TEST", "SYSTEM", "0.0") 
     
     while True:
         try:
@@ -12,12 +16,13 @@ def run_trading_engine():
             price = ticker['last']
             print(f"السعر الحالي لـ BTC/USDT هو: {price}")
             
-            # --- منطق بسيط للتجربة ---
-            # لنقل إننا سنشتري إذا كان السعر أقل من 62000 كمحاكاة
-            if price < 62000:
+            # شرط الشراء (مرفوع لـ 63000 لضمان وصول التنبيه)
+            if price < 63000:
                 log_trade("BUY", "BTC/USDT", price)
             
+            # انتظار دقيقة قبل الفحص التالي
             time.sleep(60)
+            
         except Exception as e:
             print(f"حدث خطأ: {e}")
             time.sleep(60)
