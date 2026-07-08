@@ -5,3 +5,4 @@ python-dotenv
 discord.py
 sqlalchemy
 requests
+flask
