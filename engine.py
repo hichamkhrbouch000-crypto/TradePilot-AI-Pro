@@ -1,3 +1,11 @@
+
+from src.trading.wallet import WalletManager
+from src.trading.execution import PaperTradingEngine
+
+# تهيئة المحفظة والمحرك (نضع هذا في بداية تشغيل البوت)
+wallet = WalletManager(initial_balance=20.0)
+paper_engine = PaperTradingEngine(wallet)
+
 import ccxt
 import time
 import datetime
