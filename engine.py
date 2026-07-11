@@ -1,36 +1,54 @@
 import ccxt
 import time
-import datetime
 import pandas as pd
 import pandas_ta as ta
-import sys
-import os
+import logging
 
-# إضافة المسارات ليرى بايثون المجلدات
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
+# --- إعداد الـ Logger ---
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("TradePilot")
 
-from trading.wallet import WalletManager
-from trading.execution import PaperTradingEngine
-from engine.validator import validate_signal
-from engine.risk_manager import calculate_risk_metrics
-from db.database import log_trade, log_decision
-from logger import get_logger
+# --- محاكي المحفظة ---
+class WalletManager:
+    def __init__(self, initial_balance=1000):
+        self.balance = initial_balance
+    def get_balance(self): return self.balance
 
-logger = get_logger("TradePilot")
+# --- محرك التنفيذ ---
+class PaperTradingEngine:
+    def __init__(self, wallet): self.wallet = wallet
+    def execute_order(self, symbol, side, price):
+        logger.info(f"تنفيذ {side} على {symbol} بسعر {price}")
+        return True
 
+# --- التحقق من الإشارة ---
+def validate_signal(price, rsi):
+    if rsi < 30: return True, "RSI_OVERSOLD"
+    return False, "NO_SIGNAL"
+
+# --- إدارة المخاطر ---
+def calculate_risk_metrics(df, price):
+    return {"is_valid": True}
+
+# --- قاعدة البيانات ---
+def log_trade(side, symbol, price):
+    logger.info(f"تم تسجيل الصفقة: {side} {symbol} {price}")
+def log_decision(decision):
+    pass
+
+# --- المحرك الرئيسي ---
 def run_trading_engine():
     exchange = ccxt.kucoin()
     symbol = 'BTC/USDT'
-    timeframe = '1h'
-    wallet = WalletManager(initial_balance=1000)
+    wallet = WalletManager()
     paper_engine = PaperTradingEngine(wallet)
+    last_checked_time = None
     
-    last_checked_time = None 
-    logger.info("--- النظام يعمل الآن ---")
+    logger.info("--- النظام الموحد يعمل الآن ---")
     
     while True:
         try:
-            bars = exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=50)
+            bars = exchange.fetch_ohlcv(symbol, timeframe='1h', limit=50)
             df = pd.DataFrame(bars, columns=['time', 'open', 'high', 'low', 'close', 'vol'])
             current_bar_time = df['time'].iloc[-1]
             
@@ -40,17 +58,13 @@ def run_trading_engine():
                 rsi = ta.rsi(df['close'], length=14).iloc[-1]
                 
                 is_valid, reason = validate_signal(price, rsi)
-                risk_data = calculate_risk_metrics(df, price)
-                
-                if is_valid and risk_data['is_valid']:
+                if is_valid:
                     paper_engine.execute_order(symbol, "BUY", price)
                     log_trade("BUY", symbol, price)
-                else:
-                    log_decision({"rejection_reason": reason, "price": price})
             
             time.sleep(60)
         except Exception as e:
-            logger.error(f"خطأ: {str(e)}")
+            logger.error(f"خطأ: {e}")
             time.sleep(300)
 
 if __name__ == "__main__":
